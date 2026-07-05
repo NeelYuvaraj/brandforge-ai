@@ -71,7 +71,7 @@ export default function Landing() {
         </div>
         <nav className="hidden sm:flex items-center gap-8 text-sm text-white/60">
           <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#themes" className="hover:text-white transition-colors">Themes</a>
+          
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 text-xs font-mono text-indigo-300">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
             MVP live
