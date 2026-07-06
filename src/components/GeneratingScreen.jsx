@@ -14,12 +14,16 @@ const TICKS = [
 ];
 
 export default function GeneratingScreen() {
-  const { setScreen, answers } = useBrandData();
+  const { setScreen, isGeneratingAIContent } = useBrandData();
   const [currentTick, setCurrentTick] = useState(0);
   const [completeTicks, setCompleteTicks] = useState([]);
+  // New: tracks whether the fixed ~3.2s tick animation has finished.
+  const [tickSequenceDone, setTickSequenceDone] = useState(false);
 
+  // Tick animation — timing and visuals unchanged. The only difference from
+  // before is that finishing the sequence no longer navigates directly;
+  // it just flags that this half of the "ready" condition is met.
   useEffect(() => {
-    // Increment logs — unchanged timing/logic
     const interval = setInterval(() => {
       setCompleteTicks(prev => [...prev, currentTick]);
       setCurrentTick(curr => {
@@ -27,9 +31,8 @@ export default function GeneratingScreen() {
           return curr + 1;
         } else {
           clearInterval(interval);
-          // Wait 600ms and switch to preview page
           setTimeout(() => {
-            setScreen('preview');
+            setTickSequenceDone(true);
           }, 600);
           return curr;
         }
@@ -37,7 +40,18 @@ export default function GeneratingScreen() {
     }, 450); // 450ms per step = ~3.2s total
 
     return () => clearInterval(interval);
-  }, [currentTick, setScreen]);
+  }, [currentTick]);
+
+  // Navigate to preview only once BOTH are true:
+  // 1. the tick animation has completed, and
+  // 2. Gemini has actually finished generating (or fallen back).
+  // This prevents landing on the preview screen with empty AI content
+  // if generation takes longer than the fixed animation duration.
+  useEffect(() => {
+    if (tickSequenceDone && !isGeneratingAIContent) {
+      setScreen('preview');
+    }
+  }, [tickSequenceDone, isGeneratingAIContent, setScreen]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white flex flex-col items-center justify-center font-sans relative overflow-hidden select-none">
@@ -99,6 +113,18 @@ export default function GeneratingScreen() {
               );
             })}
           </div>
+
+          {/* Shown only if Gemini is still working after the scripted ticks finish */}
+          {tickSequenceDone && isGeneratingAIContent && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2.5 pt-2 border-t border-white/10 mt-1"
+            >
+              <SpinnerCircle />
+              <span className="text-white/50">Finalizing AI response...</span>
+            </motion.div>
+          )}
         </div>
 
         {/* Global progress bar */}

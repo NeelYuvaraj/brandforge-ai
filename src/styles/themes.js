@@ -13,12 +13,16 @@ export const THEME_STYLES = {
     buttonSecondary: "bg-slate-100 hover:bg-slate-200 text-slate-800 active:scale-95 font-medium text-sm rounded-full py-2.5 px-6 transition duration-200",
     badge: "bg-slate-100 border border-slate-200/60 text-slate-600 rounded-full px-3 py-1 text-xs font-medium",
     footer: "bg-white border-t border-slate-100 text-slate-400 py-10 px-6 text-center text-sm",
-    // --- New structural descriptors (additive, non-breaking) ---
     heroLayout: "centered",
     navStyle: "topbar",
     projectLayout: "grid",
     voice: "Elegant & refined",
-    accentColor: "#0F172A"
+    accentColor: "#0F172A",
+    eyebrow: "text-xs uppercase tracking-[0.2em] text-slate-400 font-medium",
+    bioLayout: "lede",
+    skillsLayout: "pills",
+    footerLayout: "minimal",
+    density: "spacious"
   },
   cyberpunk: {
     container: "bg-zinc-950 text-zinc-100 font-mono min-h-screen selection:bg-fuchsia-500 selection:text-white pb-6",
@@ -36,25 +40,83 @@ export const THEME_STYLES = {
     navStyle: "breadcrumb",
     projectLayout: "log",
     voice: "Bold & futuristic",
-    accentColor: "#E879F9"
+    accentColor: "#E879F9",
+    eyebrow: "text-[10px] uppercase tracking-[0.3em] text-cyan-400 font-mono",
+    bioLayout: "hud",
+    skillsLayout: "neon",
+    footerLayout: "hud",
+    density: "normal"
   },
   glassmorphism: {
-    container: "bg-gradient-to-tr from-slate-950 via-indigo-950 to-purple-950 text-white font-sans min-h-screen relative overflow-hidden pb-8",
-    nav: "border-b border-white/5 bg-white/5 backdrop-blur-lg py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-30",
-    section: "py-16 px-6 md:px-12 max-w-5xl mx-auto border-b border-white/5 last:border-0",
-    card: "bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/8 hover:border-white/15 rounded-2xl p-6 transition duration-305",
-    title: "text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-pink-400 via-indigo-305 to-cyan-300 bg-clip-text text-transparent",
-    subtitle: "text-base text-slate-350 mt-2 font-medium",
-    accentText: "text-pink-400 font-bold",
-    buttonPrimary: "border border-white/20 bg-white/10 hover:bg-white/20 active:scale-98 text-white font-semibold text-sm rounded-xl py-2.5 px-6 transition duration-300 backdrop-blur-md shadow-lg shadow-white/5",
-    buttonSecondary: "border border-white/10 bg-transparent hover:bg-white/5 active:scale-98 text-white font-medium text-sm rounded-xl py-2.5 px-6 transition duration-300 backdrop-blur-md",
-    badge: "bg-white/10 border border-white/15 text-white/90 rounded-full px-3 py-1 text-xs backdrop-blur-md",
-    footer: "bg-black/20 border-t border-white/5 text-slate-500 py-10 px-6 text-center text-sm",
+    // Deep gradient + multiple radial "orbs" so backdrop-blur has real color to refract.
+    // Also adds two floating blurred blobs via before:/after: (pure Tailwind, no new markup).
+    container:
+      "relative min-h-screen overflow-hidden text-white font-sans pb-8 " +
+      "bg-[radial-gradient(ellipse_60%_50%_at_15%_15%,rgba(236,72,153,0.35),transparent_60%),radial-gradient(ellipse_55%_45%_at_85%_20%,rgba(6,182,212,0.30),transparent_60%),radial-gradient(ellipse_70%_55%_at_50%_100%,rgba(139,92,246,0.40),transparent_65%),linear-gradient(180deg,#0b1020_0%,#141033_50%,#1a0f3d_100%)] " +
+      "before:content-[''] before:pointer-events-none before:absolute before:-top-24 before:-left-24 before:w-[520px] before:h-[520px] before:rounded-full before:bg-pink-500/30 before:blur-3xl " +
+      "after:content-[''] after:pointer-events-none after:absolute after:bottom-[-160px] after:right-[-120px] after:w-[560px] after:h-[560px] after:rounded-full after:bg-cyan-400/25 after:blur-3xl",
+
+    nav:
+      "sticky top-0 z-30 py-4 px-6 md:px-12 flex justify-between items-center " +
+      "bg-white/10 backdrop-blur-2xl backdrop-saturate-150 " +
+      "border-b border-white/20 " +
+      "shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.25)]",
+
+    section:
+      "relative py-16 px-6 md:px-12 max-w-5xl mx-auto border-b border-white/10 last:border-0",
+
+    card:
+      "relative bg-white/10 border border-white/20 " +
+      "backdrop-blur-2xl backdrop-saturate-150 " +
+      "rounded-3xl p-6 " +
+      "shadow-[0_10px_40px_-10px_rgba(0,0,0,0.55),0_2px_6px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.30)] " +
+      "hover:bg-white/15 hover:border-white/30 " +
+      "hover:shadow-[0_18px_50px_-12px_rgba(0,0,0,0.65),0_4px_10px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.40)] " +
+      "transition-all duration-300 " +
+      "before:content-[''] before:absolute before:inset-x-6 before:top-0 before:h-px " +
+      "before:bg-gradient-to-r before:from-transparent before:via-white/70 before:to-transparent " +
+      "after:content-[''] after:absolute after:inset-0 after:rounded-3xl after:pointer-events-none " +
+      "after:bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0)_40%)]",
+
+    title:
+      "text-3xl md:text-5xl font-extrabold tracking-tight " +
+      "bg-gradient-to-r from-pink-300 via-fuchsia-200 to-cyan-200 " +
+      "bg-clip-text text-transparent " +
+      "drop-shadow-[0_2px_12px_rgba(236,72,153,0.35)]",
+
+    subtitle: "text-base text-white/70 mt-2 font-light",
+    accentText: "text-pink-300 font-semibold",
+
+    buttonPrimary:
+      "border border-white/30 bg-white/20 hover:bg-white/30 active:scale-95 " +
+      "text-white font-semibold text-sm rounded-full py-2.5 px-6 " +
+      "transition-all duration-300 backdrop-blur-xl backdrop-saturate-150 " +
+      "shadow-[0_8px_24px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.45)]",
+
+    buttonSecondary:
+      "border border-white/20 bg-white/5 hover:bg-white/15 active:scale-95 " +
+      "text-white/90 font-medium text-sm rounded-full py-2.5 px-6 " +
+      "transition-all duration-300 backdrop-blur-xl",
+
+    badge:
+      "bg-white/15 border border-white/25 text-white/95 " +
+      "rounded-full px-3 py-1 text-xs backdrop-blur-xl " +
+      "shadow-[inset_0_1px_0_rgba(255,255,255,0.30)]",
+
+    footer:
+      "border-t border-white/10 bg-white/5 backdrop-blur-xl " +
+      "text-white/60 py-10 px-6 text-center text-sm",
+
     heroLayout: "glass",
     navStyle: "topbar",
     projectLayout: "grid",
     voice: "Soft & translucent",
-    accentColor: "#F472B6"
+    accentColor: "#F472B6",
+    eyebrow: "text-xs uppercase tracking-[0.25em] text-white/60 font-medium",
+    bioLayout: "glass",
+    skillsLayout: "glass",
+    footerLayout: "glass",
+    density: "normal"
   },
   luxury: {
     container: "bg-[#090807] text-[#EDE8DF] font-serif min-h-screen selection:bg-amber-900 selection:text-amber-50",
@@ -72,7 +134,12 @@ export const THEME_STYLES = {
     navStyle: "wordmark",
     projectLayout: "list",
     voice: "Sophisticated & considered",
-    accentColor: "#D97706"
+    accentColor: "#D97706",
+    eyebrow: "text-[10px] uppercase tracking-[0.35em] text-amber-600 font-sans",
+    bioLayout: "magazine",
+    skillsLayout: "tags",
+    footerLayout: "colophon",
+    density: "spacious"
   },
   minimal: {
     container: "bg-white text-stone-850 font-sans min-h-screen selection:bg-stone-105",
@@ -90,7 +157,12 @@ export const THEME_STYLES = {
     navStyle: "wordmark",
     projectLayout: "list",
     voice: "Clean & understated",
-    accentColor: "#1C1917"
+    accentColor: "#1C1917",
+    eyebrow: "text-[10px] uppercase tracking-[0.2em] text-stone-400 font-mono",
+    bioLayout: "plain",
+    skillsLayout: "checklist",
+    footerLayout: "notion",
+    density: "compact"
   },
   dark: {
     container: "bg-slate-950 text-slate-200 font-sans min-h-screen selection:bg-blue-900",
@@ -108,7 +180,12 @@ export const THEME_STYLES = {
     navStyle: "topbar",
     projectLayout: "grid",
     voice: "Sharp & modern",
-    accentColor: "#3B82F6"
+    accentColor: "#3B82F6",
+    eyebrow: "text-xs uppercase tracking-[0.2em] text-blue-400 font-medium",
+    bioLayout: "card",
+    skillsLayout: "bento",
+    footerLayout: "saas",
+    density: "normal"
   },
   developer: {
     container: "bg-black text-lime-400 font-mono min-h-screen selection:bg-lime-950 selection:text-white",
@@ -126,7 +203,12 @@ export const THEME_STYLES = {
     navStyle: "breadcrumb",
     projectLayout: "log",
     voice: "Precise & technical",
-    accentColor: "#84CC16"
+    accentColor: "#84CC16",
+    eyebrow: "text-[10px] uppercase tracking-widest text-lime-600 font-mono",
+    bioLayout: "terminal",
+    skillsLayout: "array",
+    footerLayout: "terminal",
+    density: "compact"
   }
 };
 
@@ -147,20 +229,20 @@ export const MOTION_PRESETS = {
   fancy: {
     container: {
       initial: { opacity: 0 },
-      animate: { 
-        opacity: 1, 
-        transition: { 
-          staggerChildren: 0.1, 
-          delayChildren: 0.15 
-        } 
+      animate: {
+        opacity: 1,
+        transition: {
+          staggerChildren: 0.1,
+          delayChildren: 0.15
+        }
       }
     },
     item: {
       initial: { opacity: 0, y: 30 },
-      animate: { 
-        opacity: 1, 
-        y: 0, 
-        transition: { type: 'spring', stiffness: 100, damping: 14 } 
+      animate: {
+        opacity: 1,
+        y: 0,
+        transition: { type: 'spring', stiffness: 100, damping: 14 }
       }
     },
     hover: {

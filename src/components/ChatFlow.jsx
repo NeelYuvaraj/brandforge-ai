@@ -130,7 +130,8 @@ export default function ChatFlow() {
     } else if (step === 4) {
       setStep(5);
     } else if (step === 5) {
-      updateAnswer('socialUrl', textVal);
+      const isSkipped = textVal === "Skipped URLs" || !textVal.trim();
+      updateAnswer('socialUrl', isSkipped ? "" : textVal);
       setStep(6);
     } else if (step === 6) {
       setStep(7);

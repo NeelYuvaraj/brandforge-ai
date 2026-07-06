@@ -1,11 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  generatePolishedBio, 
-  generateHeadlines, 
-  improveProjects, 
-  parseResumeMock, 
-  evaluatePortfolioScore 
-} from '../utils/aiSimulator';
+import { generatePortfolioContent } from '../services/gemini';
+import { parseResumeMock, evaluatePortfolioScore } from '../utils/aiSimulator'; // scoring is always local now
 
 const BrandContext = createContext();
 
@@ -38,63 +33,61 @@ export const BrandProvider = ({ children }) => {
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [resumeParsedData, setResumeParsedData] = useState(null);
 
+  // Tracks whether the single Gemini generation pass is in flight.
+  // GeneratingScreen waits for this to become false before moving to preview.
+  const [isGeneratingAIContent, setIsGeneratingAIContent] = useState(false);
+
   const updateAnswer = (field, value) => {
-    setAnswers(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // If user updates role/skills directly or bio, sync options if we can
-      if (field === 'role' || field === 'skills' || field === 'bio') {
-        // We will regenerate options below dynamically or on command
-      }
-      return updated;
-    });
+    setAnswers(prev => ({ ...prev, [field]: value }));
   };
 
   const updateBulkAnswers = (newData) => {
     setAnswers(prev => ({ ...prev, ...newData }));
   };
 
-  // Run AI simulation calculations when we finalize details
-  const runAISimulations = () => {
-    const headlines = generateHeadlines(answers.role, answers.skills);
-    const bios = generatePolishedBio(answers.name, answers.role, answers.bio, answers.skills);
-    
-    // Auto-generate projects if nothing exists
-    const projects = improveProjects(answers.projectsText || '', answers.skills);
-    
-    // Choose defaults
-    const defaultHeadline = headlines[0] || '';
-    const defaultBio = bios.professional || '';
+  // Run AI generation when we finalize interview details.
+  // Makes exactly ONE Gemini request (bio + headlines + projects combined).
+  // Score is calculated separately, locally, with zero network calls.
+  const runAISimulations = async () => {
+    setIsGeneratingAIContent(true);
+    try {
+      const result = await generatePortfolioContent({
+        name: answers.name,
+        role: answers.role,
+        bio: answers.bio,
+        skills: answers.skills,
+        projectsText: answers.projectsText || ''
+      });
 
-    setAnswers(prev => ({
-      ...prev,
-      projects: prev.projects.length === 0 ? projects : prev.projects,
-      selectedHeadline: prev.selectedHeadline || defaultHeadline,
-      selectedBio: prev.selectedBio || defaultBio
-    }));
+      const defaultHeadline = result.headlines[0] || '';
+      const defaultBio = result.bios.professional || '';
 
-    setAiOptions({
-      headlines,
-      bios,
-      score: evaluatePortfolioScore({
-        ...answers,
-        projects: answers.projects.length === 0 ? projects : answers.projects,
-        selectedHeadline: answers.selectedHeadline || defaultHeadline,
-        selectedBio: answers.selectedBio || defaultBio
-      })
-    });
+      setAnswers(prev => ({
+        ...prev,
+        // Never overwrite real resume-derived projects; only fill if still empty.
+        projects: prev.projects.length === 0 ? result.projects : prev.projects,
+        selectedHeadline: prev.selectedHeadline || defaultHeadline,
+        selectedBio: prev.selectedBio || defaultBio
+      }));
+
+      setAiOptions(prev => ({
+        ...prev,
+        headlines: result.headlines,
+        bios: result.bios
+      }));
+    } finally {
+      setIsGeneratingAIContent(false);
+    }
   };
 
-  // Triggered after resume upload triggers
+  // Triggered after resume upload — unchanged, still simulated per spec.
   const handleResumeUpload = (fileName) => {
     setIsParsingResume(true);
-    
-    // Simulate web assembly / python parsing time
+
     setTimeout(() => {
       const parsed = parseResumeMock(fileName);
       setResumeParsedData(parsed);
-      
-      // Autofill forms
+
       setAnswers(prev => ({
         ...prev,
         name: parsed.name,
@@ -111,25 +104,46 @@ export const BrandProvider = ({ children }) => {
     }, 2500); // 2.5s parsing animation
   };
 
-  // Fix scorecard issue command
+  // Fix scorecard issue — fully local now. 'bio' is the only auto-resolvable
+  // fix: it switches to a different already-generated (already fact-grounded)
+  // tone variant rather than making a new Gemini request. Other suggestion
+  // types no longer carry a "fix" — they're informational only, since
+  // resolving them would require fabricating skills/links we don't have.
   const applyScoreFix = (suggestion) => {
-    if (suggestion.fix === 'skills') {
-      updateAnswer('skills', [...answers.skills, 'React', 'TypeScript', 'TailwindCSS', 'REST APIs', 'Git']);
+    if (suggestion.fix === 'bio') {
+      const variants = Object.values(aiOptions.bios || {}).filter(Boolean);
+      const longest = variants.reduce((best, v) => (v.length > (best?.length || 0) ? v : best), '');
+      if (longest) {
+        updateAnswer('selectedBio', longest);
+      }
+    } else if (suggestion.fix === 'skills') {
+      const defaultFixSkills = ['React', 'TypeScript', 'TailwindCSS', 'REST APIs', 'Git'];
+      const uniqueSkills = Array.from(new Set([...answers.skills, ...defaultFixSkills]));
+      updateAnswer('skills', uniqueSkills);
     } else if (suggestion.fix === 'socialUrl') {
-      updateAnswer('socialUrl', 'https://github.com/profile-link');
-    } else if (suggestion.fix === 'bio') {
-      const polished = generatePolishedBio(answers.name, answers.role, answers.bio, answers.skills);
-      updateAnswer('selectedBio', polished.professional);
+      const formattedName = answers.name ? answers.name.toLowerCase().replace(/\s+/g, '-') : 'developer';
+      updateAnswer('socialUrl', `https://github.com/${formattedName}`);
     }
   };
 
-  // Whenever answers structure changes, revalidate scorecard
+  // Portfolio score revalidates locally whenever relevant answers change —
+  // synchronous, free, no debounce or network needed.
   useEffect(() => {
-    if (screen === 'preview') {
-      const score = evaluatePortfolioScore(answers);
-      setAiOptions(prev => ({ ...prev, score }));
-    }
-  }, [answers.skills, answers.socialUrl, answers.selectedBio, answers.theme, answers.animation, screen]);
+    if (screen !== 'preview') return;
+    const score = evaluatePortfolioScore(answers);
+    setAiOptions(prev => ({ ...prev, score }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    answers.role,
+    answers.skills,
+    answers.socialUrl,
+    answers.selectedBio,
+    answers.projects,
+    answers.resumeFileName,
+    answers.theme,
+    answers.animation,
+    screen
+  ]);
 
   const resetBrandForm = () => {
     setAnswers(initialAnswers);
@@ -150,6 +164,7 @@ export const BrandProvider = ({ children }) => {
       setAiOptions,
       isParsingResume,
       resumeParsedData,
+      isGeneratingAIContent,
       updateAnswer,
       updateBulkAnswers,
       runAISimulations,

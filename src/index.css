@@ -1,1 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,450;0,600;1,400&family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;500;605;750;850&display=swap');
+
 @import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Fira Code', monospace;
+  --font-serif: 'Cormorant Garamond', serif;
+}

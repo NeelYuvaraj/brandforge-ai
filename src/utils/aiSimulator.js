@@ -1,84 +1,60 @@
-// Simulated AI Copywriter and Resume Parser utilities
+// Simulated AI Copywriter and Resume Parser utilities.
+// Also serves as the offline/error fallback for services/gemini.js —
+// so it must follow the same fact-grounding rules: never fabricate
+// projects, employers, technologies, or metrics the user didn't provide.
 
 export const generatePolishedBio = (name, role, basicBio, skills = []) => {
-  const defaultBio = basicBio || "I am a passionate professional looking to build amazing things.";
-  const skillsList = skills.length > 0 ? skills.slice(0, 3).join(', ') : 'modern tech';
+  const defaultBio = basicBio || "A dedicated professional focused on doing great work.";
+  const skillsList = skills.length > 0 ? skills.slice(0, 3).join(', ') : 'their core skills';
 
   return {
-    professional: `As a dedicated ${role}, I specialize in bridging the gap between complex technical problems and elegant, scalable solutions. With expertise in ${skillsList}, I focus on writing clean code, optimizing performance, and building intuitive user experiences that drive product success. ${defaultBio}`,
-    creative: `Imagineer, builder, and problem solver. I'm a ${role} who thrives on turning abstract ideas into tangible digital realities. Driven by curiosity and powered by ${skillsList}, I approach challenges with a fresh perspective and design interfaces that capture users' hearts and minds. ${defaultBio}`,
-    technical: `Engineered-focused ${role} with deep core competencies in ${skills.join(', ') || 'software engineering'}. Pragmatic in code execution, architecture design, and automation. I focus heavily on writing robust tests, improving pipeline efficiency, and utilizing state-of-the-art frameworks to deliver high-availability software. ${defaultBio}`
+    professional: `As a dedicated ${role || 'professional'}, ${name ? `${name} focuses` : 'I focus'} on delivering thoughtful, high-quality work${skills.length ? `, with strengths in ${skillsList}` : ''}. ${defaultBio}`,
+    creative: `${name || 'This person'} is a ${role || 'professional'} who brings curiosity and care to everything they do${skills.length ? `, drawing on ${skillsList}` : ''}. ${defaultBio}`,
+    technical: `${role || 'Professional'} with practical strengths in ${skills.join(', ') || 'their field'}. Detail-oriented and focused on doing the work well. ${defaultBio}`
   };
 };
 
 export const generateHeadlines = (role, skills = []) => {
-  const roleName = role || "Developer";
-  const skillName = skills[0] || "React";
-  
+  const roleName = role || "Professional";
+  const skillName = skills[0] || null;
+
   return [
-    `Crafting Elegant Solutions as a ${roleName}`,
-    `Building the Future of Tech with ${skillName}`,
-    `Transforming Complexity into Simple, Beautiful Code`,
-    `Hi, I'm a ${roleName} | Focused on Performance & UX`
+    `Hi, I'm ${roleName}`,
+    skillName ? `${roleName} focused on ${skillName}` : `Dedicated ${roleName}`,
+    `Bringing care and craft to ${roleName.toLowerCase()} work`,
+    `${roleName} — here to do great work`
   ];
 };
 
+/**
+ * Fact-grounded fallback: only ever rewrites what the user actually typed.
+ * Returns an empty array if no real project input was given — never
+ * fabricates filler projects.
+ */
 export const improveProjects = (projectText = "", skills = []) => {
-  const fallbackProjects = [
-    {
-      id: "proj-1",
-      title: "OmniChannel Analytics Dashboard",
-      description: "Designed and engineered an enterprise-grade analytics dashboard that aggregates data from 8+ APIs. Real-time visualization reduces report generation latency by 45%.",
-      longDescription: "A comprehensive data visualization suite built to handle high-frequency data streaming. Integrates Chart.js/Recharts, WebSockets, and a robust caching layer to deliver latency-free analytics across millions of database records.",
-      tech: ["React", "Express", "TailwindCSS", "WebSockets", "ChartJS"],
-      improvements: [
-        "Replaced canvas-based renders with SVG charts for smoother high-frequency charting.",
-        "Created an offline caching layer using IndexedDB."
-      ],
-      metrics: "45% latency reduction, 8+ APIs integrated"
-    },
-    {
-      id: "proj-2",
-      title: "Decentralized File Management Engine",
-      description: "An open-source secure cloud management solution that encrypts files client-side and stores chunks across peer-to-peer nodes, minimizing server overhead.",
-      longDescription: "A cryptographic document storage system featuring client-side AES-256 encryption. Files are split into sharded chunks and uploaded concurrently to decentralized storage blocks, allowing self-healing retrieval options.",
-      tech: ["React", "TailwindCSS", "NodeJs", "WebRTC", "CryptoAPI"],
-      improvements: [
-        "Refashioned chunk upload script to parallelize pipelines, increasing speeds by 3x.",
-        "Integrated WebRTC P2P status monitors."
-      ],
-      metrics: "3x faster uploads, AES-256 secure sharding"
-    }
-  ];
-
-  if (!projectText || projectText.trim().length < 5) {
-    return fallbackProjects;
+  const cleanText = (projectText || '').trim();
+  if (cleanText.length < 5) {
+    return [];
   }
 
-  // Generate improved project card from user single-line description
-  const cleanText = projectText.trim();
-  const techUsed = skills.length > 0 ? skills.slice(0, 3) : ["React", "Tailwind", "REST API"];
+  const techUsed = skills.length > 0 ? skills.slice(0, 3) : [];
 
   return [
     {
-      id: "proj-custom-1",
-      title: `${cleanText.split(' ').slice(0, 3).join(' ')} Application`,
-      description: `Optimized implementation of "${cleanText}" featuring high-performance state management, clean responsive grids, and an automated deployment pipeline.`,
-      longDescription: `A production-ready application addressing the core requirements of: "${cleanText}". Scaled with clean modular code, comprehensive SEO optimization, and a lightweight mobile-first layout.`,
+      id: "user-project-1",
+      title: cleanText.split(' ').slice(0, 6).join(' '),
+      description: cleanText,
+      longDescription: cleanText,
       tech: techUsed,
-      improvements: [
-        "Implemented strict component boundaries and lazy loading.",
-        "Configured semantic HTML structure to boost search index rankings."
-      ],
-      metrics: "98+ lighthouse performance score, fully responsive"
-    },
-    ...fallbackProjects
+      improvements: [],
+      metrics: ""
+    }
   ];
 };
 
 export const parseResumeMock = (fileName) => {
   const lowerName = fileName.toLowerCase();
-  
+
   if (lowerName.includes('designer') || lowerName.includes('design') || lowerName.includes('ui') || lowerName.includes('ux')) {
     return {
       name: "Sienna Vance",
@@ -111,8 +87,7 @@ export const parseResumeMock = (fileName) => {
       ]
     };
   }
-  
-  // Standard software developer profile
+
   return {
     name: "Alex Mercer",
     role: "Senior Full-Stack Engineer",
@@ -145,68 +120,86 @@ export const parseResumeMock = (fileName) => {
   };
 };
 
+/**
+ * Portfolio scoring — ALWAYS local, deterministic JavaScript. Never calls
+ * Gemini. Reflects completeness of the fields the user actually filled in;
+ * suggestions never carry an auto-fix that would require fabricating data
+ * ('bio' is the only auto-resolvable fix, since it just switches to an
+ * already-generated, already fact-grounded tone variant).
+ */
 export const evaluatePortfolioScore = (data) => {
-  const scores = {
-    seo: 80,
-    design: 85,
-    readability: 90,
-    professionalism: 85
-  };
+  const scores = { seo: 30, design: 55, readability: 30, professionalism: 40 };
   const suggestions = [];
 
-  // SEO
-  if (data.skills && data.skills.length > 5) {
-    scores.seo += 10;
+  // Role present
+  if (data.role) {
+    scores.professionalism += 15;
   } else {
-    suggestions.push({
-      category: "seo",
-      text: "Add at least 5-6 core skill tags to improve search ranking for specific developer/designer keywords.",
-      fix: "skills" // target field/step
-    });
+    suggestions.push({ category: "professionalism", text: "Add your role or title so visitors know what you do.", fix: null });
   }
 
-  if (data.socialUrl && (data.socialUrl.includes('git') || data.socialUrl.includes('link'))) {
-    scores.seo += 10;
+  // Skills count
+  const skillCount = data.skills?.length || 0;
+  if (skillCount >= 5) {
+    scores.seo += 25;
+  } else if (skillCount > 0) {
+    scores.seo += 12;
+    suggestions.push({ category: "seo", text: "Add a few more of your real skills to improve discoverability.", fix: null });
   } else {
-    suggestions.push({
-      category: "seo",
-      text: "Link your GitHub or LinkedIn profile to build outbound link authority and SEO trust.",
-      fix: "socialUrl"
-    });
+    suggestions.push({ category: "seo", text: "Add your skills so people can find you for the right work.", fix: null });
   }
 
-  // Reading / Content
-  if (data.bio && data.bio.length > 120) {
-    scores.readability += 10;
-  } else {
+  // Bio present / depth
+  const bioLength = (data.selectedBio || data.bio || '').length;
+  if (bioLength > 120) {
+    scores.readability += 30;
+  } else if (bioLength > 0) {
+    scores.readability += 15;
     suggestions.push({
       category: "readability",
-      text: "Your professional bio is very brief. Expand it with our AI Copirwriter tools for better content density.",
-      fix: "bio"
+      text: "Your bio is brief — try a different tone in the AI Copywriter panel for more depth.",
+      fix: data.selectedBio ? "bio" : null
     });
+  } else {
+    suggestions.push({ category: "readability", text: "Add a short description of yourself to generate a bio.", fix: null });
   }
 
-  // Design Theme pairing check
-  if (data.theme === 'minimal' || data.theme === 'apple') {
-    scores.design += 10;
-  }
-  if (data.animation === 'fancy') {
-    scores.design += 5;
+  // Projects
+  if (data.projects && data.projects.length > 0) {
+    scores.professionalism += 15;
+  } else {
+    suggestions.push({ category: "professionalism", text: "Add a project to showcase your real work.", fix: null });
   }
 
-  // Clamp values
-  scores.seo = Math.min(scores.seo, 100);
-  scores.design = Math.min(scores.design, 100);
-  scores.readability = Math.min(scores.readability, 100);
-  scores.professionalism = Math.min(scores.professionalism, 100);
+  // Social / contact link
+  if (data.socialUrl) {
+    scores.seo += 10;
+  } else {
+    suggestions.push({ category: "seo", text: "Add a link to your GitHub, portfolio, or LinkedIn.", fix: null });
+  }
+
+  // Resume uploaded
+  if (data.resumeFileName) {
+    scores.professionalism += 10;
+  }
+
+  // Theme/animation polish
+  if (data.theme === 'minimal' || data.theme === 'apple') scores.design += 10;
+  if (data.animation === 'fancy' || data.animation === 'crazy') scores.design += 10;
+
+  const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
+  scores.seo = clamp(scores.seo);
+  scores.design = clamp(scores.design);
+  scores.readability = clamp(scores.readability);
+  scores.professionalism = clamp(scores.professionalism);
 
   const average = Math.round((scores.seo + scores.design + scores.readability + scores.professionalism) / 4);
 
   return {
     average,
     categories: scores,
-    suggestions: suggestions.length > 0 ? suggestions : [
-      { category: "professionalism", text: "Everything looks outstanding! Add an SVG dynamic avatar signature to take design closer to 100.", fix: null }
-    ]
+    suggestions: suggestions.length > 0
+      ? suggestions.slice(0, 3)
+      : [{ category: "professionalism", text: "Everything looks great — your profile is complete.", fix: null }]
   };
 };
