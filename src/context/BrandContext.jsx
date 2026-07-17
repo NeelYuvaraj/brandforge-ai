@@ -1,24 +1,106 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { generatePortfolioContent } from '../services/gemini';
+import {
+  generateBrandKit,
+  saveBrandKit
+} from '../services/gemini';
 import { parseResumeMock, evaluatePortfolioScore } from '../utils/aiSimulator'; // scoring is always local now
 
 const BrandContext = createContext();
 
 const initialAnswers = {
+  // ==================================================
+  // BUSINESS INFORMATION
+  // ==================================================
+
+  businessName: '',
+  industry: '',
+  description: '',
+  targetAudience: '',
+  services: [],
+
+  // Additional factual business details
+tagline: '',
+address: '',
+openingHours: '',
+
+// Menu, products, pricing, packages, or other uploaded/pasted content
+menuText: '',
+menuFileName: '',
+
+// Other factual details supplied by the user
+additionalDetails: '',
+
+// User's custom website design direction
+designPreference: '',
+
+// Optional reference website supplied by the user
+designReference: '',
+
+  // ==================================================
+  // BUSINESS OWNER / CONTACT
+  // ==================================================
+
+  ownerName: '',
+  ownerRole: '',
+  email: '',
+  phone: '',
+
+  // ==================================================
+  // USER-SELECTED DESIGN
+  // ==================================================
+
+  // Keep your existing theme system.
+  // The USER selects the theme — NOT Gemini.
+  theme: 'apple',
+
+  animation: 'fancy',
+
+  // Palette mode:
+  // "preset" = user selects one of our palettes
+  // "custom" = user types a color preference
+  colorPaletteMode: 'preset',
+
+  // Name of selected preset palette
+  selectedPalette: 'ocean',
+
+  // Exact colors selected by user/preset
+  colorPalette: {
+    primary: '#2563EB',
+    secondary: '#0F172A',
+    accent: '#38BDF8'
+  },
+
+  // Example:
+  // "dark forest green and cream"
+  // "burgundy"
+  // "#14532D"
+  customColorInput: '',
+
+  // ==================================================
+  // GENERATED BRAND KIT
+  // ==================================================
+
+  brandKit: null,
+
+  // ==================================================
+  // OLD FIELDS
+  // Keep temporarily so existing UI does not crash.
+  // We will remove these only after migration is complete.
+  // ==================================================
+
   name: '',
   role: '',
+  bio: '',
   skills: [],
-  bio: '', // basic input
-  resumeFile: null,
-  resumeFileName: '',
+  projectsText: '',
+  experience: '',
+  education: [],
   socialUrl: '',
-  theme: 'apple', // default theme
-  animation: 'fancy', // default animation intensity
   projects: [],
   timeline: [],
   selectedHeadline: '',
   selectedBio: '',
-  bioType: 'professional' // professional, creative, technical
+  bioType: 'professional'
 };
 
 export const BrandProvider = ({ children }) => {
@@ -48,37 +130,155 @@ export const BrandProvider = ({ children }) => {
   // Run AI generation when we finalize interview details.
   // Makes exactly ONE Gemini request (bio + headlines + projects combined).
   // Score is calculated separately, locally, with zero network calls.
-  const runAISimulations = async () => {
-    setIsGeneratingAIContent(true);
-    try {
-      const result = await generatePortfolioContent({
-        name: answers.name,
-        role: answers.role,
-        bio: answers.bio,
-        skills: answers.skills,
-        projectsText: answers.projectsText || ''
-      });
+const runAISimulations = async () => {
+  setIsGeneratingAIContent(true);
 
-      const defaultHeadline = result.headlines[0] || '';
-      const defaultBio = result.bios.professional || '';
+  try {
+    // --------------------------------------------------
+    // Determine what color information Gemini receives
+    // --------------------------------------------------
 
-      setAnswers(prev => ({
-        ...prev,
-        // Never overwrite real resume-derived projects; only fill if still empty.
-        projects: prev.projects.length === 0 ? result.projects : prev.projects,
-        selectedHeadline: prev.selectedHeadline || defaultHeadline,
-        selectedBio: prev.selectedBio || defaultBio
-      }));
+    let preferredColors = '';
 
-      setAiOptions(prev => ({
-        ...prev,
-        headlines: result.headlines,
-        bios: result.bios
-      }));
-    } finally {
-      setIsGeneratingAIContent(false);
+    if (answers.colorPaletteMode === 'custom') {
+      // User typed something like:
+      // "dark green and cream"
+      // "#14532D"
+      // "burgundy"
+      preferredColors = answers.customColorInput || '';
+    } else {
+      // User selected one of our preset palettes
+      preferredColors = `
+        Primary: ${answers.colorPalette?.primary || ''}
+        Secondary: ${answers.colorPalette?.secondary || ''}
+        Accent: ${answers.colorPalette?.accent || ''}
+      `;
     }
-  };
+
+    // --------------------------------------------------
+    // Generate complete Brand Kit with ONE Gemini call
+    // --------------------------------------------------
+
+    const result = await generateBrandKit({
+  // BUSINESS
+  businessName: answers.businessName,
+  industry: answers.industry,
+  description: answers.description,
+  targetAudience: answers.targetAudience,
+  services: answers.services || [],
+
+  // ADDITIONAL FACTUAL BUSINESS DETAILS
+  tagline: answers.tagline || '',
+  address: answers.address || '',
+  openingHours: answers.openingHours || '',
+  menuText: answers.menuText || '',
+  menuFileName: answers.menuFileName || '',
+  additionalDetails: answers.additionalDetails || '',
+
+  // DESIGN
+  // User-selected theme remains the base theme.
+  brandStyle: answers.theme,
+
+  // User can describe exactly how they want the site to look.
+  designPreference: answers.designPreference || '',
+
+  // Optional reference URL.
+  designReference: answers.designReference || '',
+
+  // Preset palette OR custom color request.
+  preferredColors,
+
+  // CONTACT
+  ownerName: answers.ownerName || '',
+  ownerRole: answers.ownerRole || '',
+  email: answers.email || '',
+  phone: answers.phone || ''
+});
+
+    // --------------------------------------------------
+    // If user selected a PRESET palette,
+    // force the generated Brand Kit to use those colors.
+    //
+    // Gemini must NOT overwrite preset colors.
+    // --------------------------------------------------
+
+    if (
+      answers.colorPaletteMode === 'preset' &&
+      result?.visualIdentity
+    ) {
+      result.visualIdentity.primaryColor =
+        answers.colorPalette.primary;
+
+      result.visualIdentity.secondaryColor =
+        answers.colorPalette.secondary;
+
+      result.visualIdentity.accentColor =
+        answers.colorPalette.accent;
+    }
+
+    // --------------------------------------------------
+    // IMPORTANT:
+    // Always preserve USER'S selected theme.
+    // Gemini does NOT choose the website theme.
+    // --------------------------------------------------
+
+    if (result?.visualIdentity) {
+      result.visualIdentity.theme = answers.theme;
+    }
+
+    // --------------------------------------------------
+    // Save generated Brand Kit into application state
+    // --------------------------------------------------
+
+    setAnswers(prev => ({
+      ...prev,
+
+      brandKit: result,
+
+      // Keep user's theme
+      theme: prev.theme,
+
+      // Temporary compatibility with your old
+      // portfolio components
+      name:
+        result.business?.name ||
+        prev.businessName,
+
+      role:
+        result.business?.industry ||
+        prev.industry,
+
+      bio:
+        result.business?.description ||
+        prev.description,
+
+      selectedHeadline:
+        result.website?.headline || '',
+
+      selectedBio:
+        result.website?.about || ''
+    }));
+
+    // --------------------------------------------------
+    // Save locally
+    // --------------------------------------------------
+
+    saveBrandKit(result);
+
+    return result;
+
+  } catch (error) {
+    console.error(
+      '[BrandForge] Brand Kit generation failed:',
+      error
+    );
+
+    return null;
+
+  } finally {
+    setIsGeneratingAIContent(false);
+  }
+};
 
   // Triggered after resume upload — unchanged, still simulated per spec.
   const handleResumeUpload = (fileName) => {
