@@ -8,25 +8,25 @@ const easeOut = [0.16, 1, 0.3, 1];
 const FEATURES = [
   {
     icon: MessageSquareText,
-    title: 'Conversational setup',
-    description: 'Answer 6–8 direct questions or upload a resume to populate every detail instantly.'
+    title: 'Conversational brand setup',
+    description: 'Tell us about your business, audience, services, and vision through a simple AI-guided conversation.'
   },
   {
     icon: Wand2,
-    title: 'AI copywriting',
-    description: 'Plain statements become polished summaries, headlines, and metrics — automatically.'
+    title: 'AI powered brand creation',
+    description: 'Generate tailored website content, brand messaging, visual identity, and business materials with AI.'
   },
   {
     icon: LayoutTemplate,
-    title: 'Multi-theme presets',
-    description: 'Switch instantly between minimal, glass, luxury, terminal, and more.'
+    title: 'Custom websites & brand kits',
+    description: 'Create a personalized website, business card, logo concept, color palette, and complete brand kit in one place.'
   }
 ];
 
 export default function Landing() {
   const { setScreen } = useBrandData();
   const [typedText, setTypedText] = useState('');
-  const fullTagline = "Your personal brand, built by AI in 60 seconds";
+  const fullTagline = "Your complete business brand, built with AI.";
   const [stage, setStage] = useState(0);
 
   // Typing effect — unchanged behavior
@@ -74,7 +74,7 @@ export default function Landing() {
           
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 text-xs font-mono text-indigo-300">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-            MVP live
+            AI powered
           </span>
         </nav>
       </header>
@@ -97,7 +97,7 @@ export default function Landing() {
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-xs font-mono text-white/60 mb-6"
           >
             <Sparkles className="w-3 h-3 text-indigo-400" />
-            AI portfolio engine
+            AI brand builder 
           </motion.span>
 
           <motion.h1
@@ -105,9 +105,9 @@ export default function Landing() {
             transition={{ duration: 0.6, ease: easeOut }}
             className="text-5xl sm:text-6xl lg:text-[4rem] font-semibold tracking-tight leading-[1.05] mb-6"
           >
-            <span className="text-white/50 font-light">Build your</span><br />
-            digital presence.<br />
-            <span className="text-white">Without writing code.</span>
+            <span className="text-white/50 font-light">Build your brand</span><br />
+            launch your website.<br />
+            <span className="text-white">powered by AI.</span>
           </motion.h1>
 
           <motion.p
@@ -168,7 +168,7 @@ export default function Landing() {
                       What's your role and biggest achievement?
                     </div>
                     <div className="max-w-[85%] ml-auto rounded-2xl rounded-br-sm bg-indigo-500/15 border border-indigo-400/20 px-4 py-3 text-sm text-white">
-                      Senior Product Designer — led a redesign that lifted conversion 34%.
+                      A modern local bakery looking for a warm, welcoming brand and an online presence.
                     </div>
                     <div className="flex items-center gap-2 text-xs font-mono text-white/30 pt-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
